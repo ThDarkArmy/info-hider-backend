@@ -1,21 +1,26 @@
-from dataclasses import field
+from dataclasses import fields
 from rest_framework import serializers
 
-from .models import Message, EncryptedMessage, DecryptedMessage
+from .models import ExecInfo, HiddenInfoContainer, ImageInfo, TextInfo
 
-class MessageSerializer(serializers.ModelSerializer):
+
+class TextInfoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Message
+        model = TextInfo
         fields = '__all__'
 
-class EncryptedMessageSerializer(serializers.ModelSerializer):
+class ImageInfoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = EncryptedMessage
+        model = ImageInfo
+        fields = '__all__'
+
+class ExecInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExecInfo
         fields = '__all__'
 
 
-class DecryptedMessageSerializer(serializers.ModelSerializer):
+class HiddenInfoContainerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DecryptedMessage
+        model = HiddenInfoContainer
         fields = '__all__'
-

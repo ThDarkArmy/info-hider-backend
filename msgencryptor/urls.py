@@ -20,7 +20,11 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/users/', include('apps.users.urls')),
     path('api/v1/messages/', include('apps.message.urls'))
     
 ]+static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+
+
+
+handler404 = 'utils.views.error_404'
+handler500 = 'utils.views.error_500'

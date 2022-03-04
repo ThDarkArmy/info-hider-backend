@@ -1,132 +1,206 @@
-from copy import error
 from django.conf import settings
-from django.shortcuts import render
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
-from .models import DecryptedMessage, EncryptedMessage, Message
-from .serializers import MessageSerializer, EncryptedMessageSerializer, DecryptedMessageSerializer
-from django.http import FileResponse, HttpResponse
-from django.core.serializers import serialize
-from django.core.files import File
+from .serializers import ExecInfoSerializer, HiddenInfoContainerSerializer, ImageInfoSerializer, TextInfoSerializer
 import io
 from PIL import Image
-import sys
-import os
-
-from django.core.files.uploadedfile import InMemoryUploadedFile
-import json
+import uuid
+import mimetypes
 
 
-@api_view(['GET'])
-def getAll(request):
-    messages = Message.objects.all()
-    print(messages)
-    serializer = MessageSerializer(messages, many=True)
-    return Response(serializer.data)
+
+# @api_view(['GET'])
+# def getAll(request):
+#     messages = Message.objects.all()
+#     print(messages)
+#     serializer = MessageSerializer(messages, many=True)
+#     return Response(serializer.data)
 
 
-@api_view(['GET'])
-def getById(request, pk):
-    user = Message.objects.get(id=pk)
-    serializer = MessageSerializer(user, many=False)
-    return Response(serializer.data)
+# @api_view(['GET'])
+# def getById(request, pk):
+#     user = Message.objects.get(id=pk)
+#     serializer = MessageSerializer(user, many=False)
+#     return Response(serializer.data)
 
 
+
+# hide text in image
 @api_view(['POST'])
-def encryptMessage(request):
-    serializer = MessageSerializer(data=request.data)
+def hideText(request):
+    serializer = TextInfoSerializer(data=request.data)
+
+    print(request.data)
 
     if serializer.is_valid():
         serializer.save()
-        print(serializer.data['textMsg'].encode())
-        imageFile = open(str(settings.BASE_DIR) +
-                         str(serializer.data['image1']), 'ab')
-        if serializer.data['image2'] != None:
-            img = Image.open(str(settings.BASE_DIR) + str(serializer.data['image2']))
-            byte_array = io.BytesIO()
-            img.save(byte_array, format='PNG')
+        containerImageFile = open(str(settings.BASE_DIR)+ str(serializer.data['containerImage']), 'ab')
+        containerImageFile.write(serializer.data['textInfo'].encode())
 
-            imageFile.write(byte_array.getvalue())
-        elif serializer.data['textMsg'] != None:
-            imageFile.write(serializer.data['textMsg'].encode())
-        else:
-            return Response({"success": False, "message": "Invalid request body", "error": "error occured"})
-
-        imageFile.close()
-
-        # encryptedMessage = EncryptedMessage.objects.create()
-        # print(serializer.data['image1'])
-
-        # img = Image.open(str(settings.BASE_DIR) +
-        #                  str(serializer.data['image1']), 'r')
-        # img_ext = list(os.path.splitext(img.filename))[-1]
-        # img_io = io.BytesIO()
-        # img.save(img_io, format="JPEG")
-        # encryptedMessage.encryptedImage = InMemoryUploadedFile(img_io,
-        #                                               'ImageField',
-        #                                               'encrypted'+img_ext,
-        #                                               'JPEG',
-        #                                               sys.getsizeof(img_io), None)
-
-        # encryptedMessage.save()
-
-        # img.close()
-
-        # encryptedMessageSerializer = EncryptedMessageSerializer(
-        #     EncryptedMessage.objects.get(id=encryptedMessage.id), many=False)
-
-        # img_file = open(str(settings.BASE_DIR)+str(encryptedMessageSerializer.data['encryptedImage']), 'rb')
-        # content = img_file.read()
-        # offset = content.index(bytes.fromhex('FFD9'))
-        # img_file.seek(offset + 2)
-        # print(img_file.read())
-
-        # img_file.close()
         return Response({"success": True,
-            "message": "Information Encrypted Successfully",
+            "message": "Information hided successfully",
             "body": serializer.data})
 
-    return Response("Invalid")
+    else:
+        return Response({"success": False,
+            "message": "Invalid request data"})
 
 
+# hide image in another image
 @api_view(['POST'])
-def decryptMessage(request):
-    decryptedImagePath = str(settings.BASE_DIR)+str("/media/images/info/"+"decryptedImage.jpg")
-    serializer = EncryptedMessageSerializer(data=request.data)
+def hideImage(request):
+    serializer = ImageInfoSerializer(data=request.data)
 
     if serializer.is_valid():
         serializer.save()
+        containerImageFile = open(str(settings.BASE_DIR)+ str(serializer.data['containerImage']), 'ab')
+        imageInfoFile = Image.open(str(settings.BASE_DIR) + str(serializer.data['imageInfo']))
+        byte_array = io.BytesIO()
+        imageInfoFile.save(byte_array, format='PNG')
 
-    print(serializer.data['encryptedImage'])
+        containerImageFile.write(byte_array.getvalue())
 
-    encryptedImage = open(str(settings.BASE_DIR) +
-                          str(serializer.data['encryptedImage']), 'rb')
-    content = encryptedImage.read()
-    offset = content.index(bytes.fromhex("FFD9"))
-    encryptedImage.seek(offset+2)
+        return Response({"success": True, "message": "Information hided successfully", "body": serializer.data})
 
-    decryptedImage = Image.open(io.BytesIO(encryptedImage.read()))
-    decryptedImage.save(decryptedImagePath)
-
-    decryptedImageFile = Image.open(decryptedImagePath, 'r')
-    decryptedMessage = DecryptedMessage()
-    img_io = io.BytesIO()
-    img_ext = list(os.path.splitext(decryptedImageFile.filename))[-1]
-    decryptedImageFile.save(img_io, format="JPEG")
-    print(decryptedImageFile.filename)
-    decryptedMessage.decryptedImage = InMemoryUploadedFile(img_io,
-                                                      'ImageField',
-                                                      'decrypted'+ img_ext,
-                                                      'JPEG',
-                                                      sys.getsizeof(img_io), None)
+    else:
+        return Response({"success": False,
+            "message": "Invalid request data"})
 
 
-    decryptedMessage.save()
+# hide execfile in an image
+@api_view(['POST'])
+def hideExec(request):
+    serializer = ExecInfoSerializer(data=request.data)
 
-    decryptedMessageObject = DecryptedMessage.objects.get(id=decryptedMessage.id)
-    decryptedMessageSerializer = DecryptedMessageSerializer(decryptedMessageObject, many=False)
+    if serializer.is_valid():
+        serializer.save()
+        containerImageFile = open(str(settings.BASE_DIR)+ str(serializer.data['containerImage']), 'ab')
+        execFile = open(str(settings.BASE_DIR)+str(serializer.data['execFile']), 'rb')
+
+        containerImageFile.write(execFile.read())
+
+        return Response({"success": True, "message": "Info hided successfully", "body": serializer.data})
+    else:
+        return Response({"success": False,
+            "message": "Invalid request data"})
 
 
-    return Response(decryptedMessageSerializer.data)
+
+# extract info from an image
+@api_view(['POST'])
+def extractInfo(request):
+    extractedImagePath = str(settings.BASE_DIR)+str("/media/images/extractedImages/")
+    fileName = str(uuid.uuid4())
+    serializer = HiddenInfoContainerSerializer(data=request.data)
+
+    if serializer.is_valid():
+        serializer.save()
+    
+        hiddenInfoContainerImage = open(str(settings.BASE_DIR)+ str(serializer.data['hiddenInfoContainerImage']), 'rb')
+
+        content = hiddenInfoContainerImage.read()
+        offset = content.index(bytes.fromhex("FFD9"))
+        hiddenInfoContainerImage.seek(offset + 2)
+
+        readInfo = hiddenInfoContainerImage.read()
+
+        try:
+            return Response({"success": True, "message": "Info extracted successfully", "body": {"text": readInfo.decode()}})
+        except:
+            try:
+                extractedImageInfo = Image.open(io.BytesIO(readInfo))
+        
+                extractedImageInfo.save(extractedImagePath+fileName+".jpg")
+                imagePath = str("/media/images/extractedImages/")+fileName+".jpg"
+                return Response({"success": True, "message": "Info extracted successfully", "body": {"imagePath": imagePath}})
+            except:
+                try:
+                    execpath = "/media/files/extractedExecFiles/"+fileName+".exe"
+                    with open(str(settings.BASE_DIR) +execpath, "wb") as exec:
+                        exec.write(readInfo)
+                    return Response({"success": True, "message": "Info extracted successfully", "body": {"execPath": execpath}})
+
+                except:
+                    return Response({"success": False,
+                "message": "Error Occured while extracting"})
+
+    else:
+        return Response({"success": False,
+            "message": "Invalid request data"})
+
+
+
+
+
+
+# @api_view(['POST'])
+# def decryptMessage(request):
+#     decryptedImagePath = str(settings.BASE_DIR)+str("/media/images/decrypted/"+"decryptedImage.jpg")
+#     serializer = EncryptedMessageSerializer(data=request.data)
+
+#     if serializer.is_valid(raise_exception=True):
+#         serializer.save()
+
+#     encryptedImage = open(str(settings.BASE_DIR) +
+#                           str(serializer.data['encryptedImage']), 'rb')
+#     content = encryptedImage.read()
+#     offset = content.index(bytes.fromhex("FFD9"))
+#     encryptedImage.seek(offset+2)
+
+#     readInfo = encryptedImage.read()
+#     decryptedImage = Image.open(io.BytesIO(readInfo))
+#     decryptedImage.save(decryptedImagePath)
+
+#     decryptedImageFile = Image.open(decryptedImagePath, 'r')
+#     decryptedMessage = DecryptedMessage()
+#     img_io = io.BytesIO()
+#     img_ext = list(os.path.splitext(decryptedImageFile.filename))[-1]
+#     decryptedImageFile.save(img_io, format="JPEG")
+#     print(decryptedImageFile.filename)
+#     decryptedMessage.decryptedImage = InMemoryUploadedFile(img_io,
+#                                                       'ImageField',
+#                                                       'decrypted'+ img_ext,
+#                                                       'JPEG',
+#                                                       sys.getsizeof(img_io), None)
+
+#     decryptedMessage.save()
+
+#     decryptedMessageObject = DecryptedMessage.objects.get(id=decryptedMessage.id)
+#     decryptedMessageSerializer = DecryptedMessageSerializer(decryptedMessageObject, many=False)
+
+
+#     return Response(decryptedMessageSerializer.data)
+
+
+
+
+# @api_view(['POST'])
+# def encryptMessage(request):
+#     serializer = MessageSerializer(data=request.data)
+
+#     if serializer.is_valid():
+#         serializer.save()
+#         print(serializer.data['textMsg'].encode())
+#         imageFile = open(str(settings.BASE_DIR) +
+#                          str(serializer.data['image1']), 'ab')
+#         if serializer.data['image2'] != None:
+#             img = Image.open(str(settings.BASE_DIR) + str(serializer.data['image2']))
+#             byte_array = io.BytesIO()
+#             img.save(byte_array, format='PNG')
+
+#             imageFile.write(byte_array.getvalue())
+#         elif serializer.data['textMsg'] != None:
+#             imageFile.write(serializer.data['textMsg'].encode())
+#         else:
+#             return Response({"success": False, "message": "Invalid request body", "error": "error occured"})
+
+#         imageFile.close()
+
+#         return Response({"success": True,
+#             "message": "Information Encrypted Successfully",
+#             "body": serializer.data})
+
+#     return Response("Invalid")
+

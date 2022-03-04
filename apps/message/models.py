@@ -1,27 +1,29 @@
-from distutils.command.upload import upload
-from sre_constants import MAX_UNTIL
 from django.db import models
 
 
 # Create your models here.
 
-class Message(models.Model):
-    textMsg = models.CharField(max_length=5000, blank=True)
-    image1 = models.ImageField(upload_to="images/front", blank=True)
-    image2 = models.ImageField(upload_to="images/info", blank=True)
-
-    def __str__(self):
-        return ' textMsg: {} image1: {} image2: {}'.format(self.textMsg, self.image1, self.image2)
+class TextInfo(models.Model):
+    textInfo = models.TextField(max_length=5000, blank=False)
+    containerImage = models.ImageField(upload_to="images/containers", blank=False)
 
 
-class EncryptedMessage(models.Model):
-    encryptedImage = models.ImageField(upload_to="images/encrypted", blank=True)
-
-    def __str__(self):
-        return 'image: {}'.format(self.image)
+class ImageInfo(models.Model):
+    imageInfo = models.ImageField(upload_to="images/info", blank=False)
+    containerImage = models.ImageField(upload_to="images/containers", blank=False)
 
 
-class DecryptedMessage(models.Model):
-    decryptedText = models.CharField(max_length=10000, blank=True)
-    decryptedImage = models.ImageField(upload_to="images/decrypted", blank=True)
+class ExecInfo(models.Model):
+    execFile = models.FileField(upload_to="files/exec", blank=False)
+    containerImage = models.ImageField(upload_to="images/containers", blank=False)
+
+
+class HiddenInfoContainer(models.Model):
+    hiddenInfoContainerImage = models.ImageField(upload_to="images/HiddenInfoContainers")
+
+
+# class ExtractedInfo(models.Model):
+#     extractedText = models.TextField(max_length=5000, blank=True)
+#     extractedImage = models.ImageField(upload_to="images/extractedImages", blank=True)
+#     extractedExecFile = models.FileField(upload_to="file/extractedExecFiles", blank=True)
 
