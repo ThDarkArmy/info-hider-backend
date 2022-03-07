@@ -86,11 +86,11 @@ WSGI_APPLICATION = 'msgencryptor.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'msgencryptordb',
-        'USER': 'root',
-        'PASSWORD': 'password',
-        'HOST': 'localhost',
-        'PORT': '3306'
+        'NAME': 'infohiderdb',
+        'USER': 'admin',
+        'PASSWORD': 'le43i3W1',
+        'HOST': 'mysql-71262-0.cloudclusters.net',
+        'PORT': '12451'
     }
 }
 

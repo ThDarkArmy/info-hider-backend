@@ -41,7 +41,7 @@ def hideText(request):
 
         return Response({"success": True,
             "message": "Information hided successfully",
-            "body": serializer.data})
+            "body":{"containerImage": serializer.data["containerImage"]}})
 
     else:
         return Response({"success": False,
@@ -52,7 +52,7 @@ def hideText(request):
 @api_view(['POST'])
 def hideImage(request):
     serializer = ImageInfoSerializer(data=request.data)
-
+    print(request.data)
     if serializer.is_valid():
         serializer.save()
         containerImageFile = open(str(settings.BASE_DIR)+ str(serializer.data['containerImage']), 'ab')
@@ -62,7 +62,7 @@ def hideImage(request):
 
         containerImageFile.write(byte_array.getvalue())
 
-        return Response({"success": True, "message": "Information hided successfully", "body": serializer.data})
+        return Response({"success": True, "message": "Information hided successfully", "body":{"containerImage": serializer.data['containerImage']}})
 
     else:
         return Response({"success": False,
@@ -73,7 +73,7 @@ def hideImage(request):
 @api_view(['POST'])
 def hideExec(request):
     serializer = ExecInfoSerializer(data=request.data)
-
+    print(request.data)
     if serializer.is_valid():
         serializer.save()
         containerImageFile = open(str(settings.BASE_DIR)+ str(serializer.data['containerImage']), 'ab')
@@ -81,7 +81,7 @@ def hideExec(request):
 
         containerImageFile.write(execFile.read())
 
-        return Response({"success": True, "message": "Info hided successfully", "body": serializer.data})
+        return Response({"success": True, "message": "Info hided successfully", "body":{"containerImage": serializer.data['containerImage']}})
     else:
         return Response({"success": False,
             "message": "Invalid request data"})
@@ -107,20 +107,20 @@ def extractInfo(request):
         readInfo = hiddenInfoContainerImage.read()
 
         try:
-            return Response({"success": True, "message": "Info extracted successfully", "body": {"text": readInfo.decode()}})
+            return Response({"success": True, "message": "Info extracted successfully","type":"TEXT", "body": {"textInfo": readInfo.decode()}})
         except:
             try:
                 extractedImageInfo = Image.open(io.BytesIO(readInfo))
         
                 extractedImageInfo.save(extractedImagePath+fileName+".jpg")
                 imagePath = str("/media/images/extractedImages/")+fileName+".jpg"
-                return Response({"success": True, "message": "Info extracted successfully", "body": {"imagePath": imagePath}})
+                return Response({"success": True, "message": "Info extracted successfully","type":"IMAGE", "body": {"imagePath": imagePath}})
             except:
                 try:
                     execpath = "/media/files/extractedExecFiles/"+fileName+".exe"
                     with open(str(settings.BASE_DIR) +execpath, "wb") as exec:
                         exec.write(readInfo)
-                    return Response({"success": True, "message": "Info extracted successfully", "body": {"execPath": execpath}})
+                    return Response({"success": True, "message": "Info extracted successfully","type":"EXEC", "body": {"execPath": execpath}})
 
                 except:
                     return Response({"success": False,

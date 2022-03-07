@@ -11,3 +11,6 @@ urlpatterns = [
     path('hide-exec', views.hideExec, name="Hide Exec"),
     path('extract-info', views.extractInfo, name="Extract info from container")
 ]
+
+
+
